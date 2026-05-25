@@ -220,6 +220,55 @@
                 color: var(--danger);
             }
 
+            .person-row {
+                display: grid;
+                grid-template-columns: 44px minmax(0, 1fr);
+                gap: 12px;
+                align-items: center;
+            }
+
+            .avatar {
+                width: 44px;
+                height: 44px;
+                border-radius: 999px;
+                background: #dfe7f2;
+                color: #324055;
+                display: grid;
+                place-items: center;
+                font-weight: 800;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .avatar img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .status-dot {
+                position: absolute;
+                right: 1px;
+                top: 1px;
+                width: 13px;
+                height: 13px;
+                border: 2px solid #ffffff;
+                border-radius: 999px;
+                background: #98a2b3;
+            }
+
+            .status-dot.online {
+                background: #16a34a;
+            }
+
+            .status-dot.standby {
+                background: #2563eb;
+            }
+
+            .status-dot.offline {
+                background: #98a2b3;
+            }
+
             .toolbar {
                 display: flex;
                 align-items: center;
@@ -472,6 +521,7 @@
                     <nav class="nav-list">
                         <a class="{{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
                         <a class="{{ request()->routeIs('projects.*') || request()->routeIs('tasks.*') ? 'active' : '' }}" href="{{ route('projects.index') }}">Projects</a>
+                        <a class="{{ request()->routeIs('connections.*') ? 'active' : '' }}" href="{{ route('connections.index') }}">Connections</a>
                         <a class="{{ request()->routeIs('notes.*') ? 'active' : '' }}" href="{{ route('notes.index') }}">Notes</a>
                         <a class="{{ request()->routeIs('inbox.*') ? 'active' : '' }}" href="{{ route('inbox.index') }}">Inbox</a>
                     </nav>

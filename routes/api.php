@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ConnectionController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\InboxController;
 use App\Http\Controllers\Api\NoteController;
@@ -49,4 +50,10 @@ Route::middleware('firebase.bearer')->group(function (): void {
     Route::post('/inbox', [InboxController::class, 'store'])->name('api.inbox.store');
     Route::patch('/inbox/{itemId}/read', [InboxController::class, 'markRead'])->name('api.inbox.read');
     Route::delete('/inbox/{itemId}', [InboxController::class, 'destroy'])->name('api.inbox.destroy');
+
+    Route::get('/connections', [ConnectionController::class, 'index'])->name('api.connections.index');
+    Route::post('/connections/{userId}/request', [ConnectionController::class, 'request'])->name('api.connections.request');
+    Route::post('/connections/{userId}/accept', [ConnectionController::class, 'accept'])->name('api.connections.accept');
+    Route::post('/connections/{userId}/decline', [ConnectionController::class, 'decline'])->name('api.connections.decline');
+    Route::delete('/connections/{userId}', [ConnectionController::class, 'destroy'])->name('api.connections.destroy');
 });

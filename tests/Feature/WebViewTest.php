@@ -50,6 +50,27 @@ class WebViewTest extends TestCase
         $this->assertStringContainsString('Team and task inbox', $inboxHtml);
     }
 
+    public function test_connections_view_renders(): void
+    {
+        $html = view('connections.index', [
+            'currentUser' => [
+                'id' => 'user_1',
+                'connectionIds' => ['user_2'],
+                'pendingConnectionIds' => ['user_3'],
+                'sentConnectionRequestIds' => ['user_4'],
+            ],
+            'users' => [
+                $this->user('user_2', 'Connected', 'ONLINE'),
+                $this->user('user_3', 'Pending', 'STANDBY'),
+                $this->user('user_4', 'Sent', 'OFFLINE'),
+                $this->user('user_5', 'Discover', 'OFFLINE'),
+            ],
+        ])->render();
+
+        $this->assertStringContainsString('Connections', $html);
+        $this->assertStringContainsString('Pending requests', $html);
+    }
+
     private function project(): array
     {
         return [
@@ -94,6 +115,19 @@ class WebViewTest extends TestCase
             'content' => 'Note body',
             'date' => '2026-05-26',
             'time' => '10:00',
+        ];
+    }
+
+    private function user(string $id, string $firstName, string $status): array
+    {
+        return [
+            'id' => $id,
+            'firstName' => $firstName,
+            'lastName' => 'User',
+            'alias' => strtolower($firstName),
+            'email' => strtolower($firstName).'@example.test',
+            'profilePictureUrl' => '',
+            'status' => $status,
         ];
     }
 }

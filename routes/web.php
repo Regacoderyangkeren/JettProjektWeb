@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\FirebaseAuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Web\ConnectionPageController;
 use App\Http\Controllers\Web\InboxPageController;
 use App\Http\Controllers\Web\NotePageController;
 use App\Http\Controllers\Web\ProjectPageController;
@@ -43,4 +44,10 @@ Route::middleware('firebase.session')->group(function (): void {
     Route::get('/inbox', [InboxPageController::class, 'index'])->name('inbox.index');
     Route::patch('/inbox/{itemId}/read', [InboxPageController::class, 'read'])->name('inbox.read');
     Route::delete('/inbox/{itemId}', [InboxPageController::class, 'destroy'])->name('inbox.destroy');
+
+    Route::get('/connections', [ConnectionPageController::class, 'index'])->name('connections.index');
+    Route::post('/connections/{userId}/request', [ConnectionPageController::class, 'request'])->name('connections.request');
+    Route::post('/connections/{userId}/accept', [ConnectionPageController::class, 'accept'])->name('connections.accept');
+    Route::post('/connections/{userId}/decline', [ConnectionPageController::class, 'decline'])->name('connections.decline');
+    Route::delete('/connections/{userId}', [ConnectionPageController::class, 'destroy'])->name('connections.destroy');
 });
