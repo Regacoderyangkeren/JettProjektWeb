@@ -23,4 +23,14 @@ class ExampleTest extends TestCase
 
         $response->assertOk();
     }
+
+    public function test_forwarded_https_is_used_for_login_form_urls(): void
+    {
+        $response = $this
+            ->withHeader('X-Forwarded-Proto', 'https')
+            ->get('http://jettprojekt.test/login');
+
+        $response->assertOk();
+        $response->assertSee('action="https://jettprojekt.test/login"', false);
+    }
 }

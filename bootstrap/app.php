@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureFirebaseBearer;
+use App\Http\Middleware\EnsureFirebaseSession;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -12,9 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
-            'firebase.bearer' => \App\Http\Middleware\EnsureFirebaseBearer::class,
-            'firebase.session' => \App\Http\Middleware\EnsureFirebaseSession::class,
+            'firebase.bearer' => EnsureFirebaseBearer::class,
+            'firebase.session' => EnsureFirebaseSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
