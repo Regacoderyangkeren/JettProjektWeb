@@ -23,7 +23,7 @@ class FirebaseService
             return $this->auth;
         }
 
-        $factory = (new Factory())
+        $factory = (new Factory)
             ->withServiceAccount($this->serviceAccount())
             ->withProjectId($this->projectId());
 
@@ -50,7 +50,7 @@ class FirebaseService
             'projectId' => $this->projectId(),
             'database' => $this->firestoreDatabase(),
             'credentials' => $credentials,
-            'transport' => extension_loaded('grpc') ? 'grpc' : 'rest',
+            'transport' => $this->firestoreTransport(),
         ]);
     }
 
@@ -82,6 +82,13 @@ class FirebaseService
         $database = config('jettprojekt.firebase.firestore_database', '(default)');
 
         return is_string($database) && $database !== '' ? $database : '(default)';
+    }
+
+    public function firestoreTransport(): string
+    {
+        $transport = strtolower((string) config('jettprojekt.firebase.firestore_transport', 'rest'));
+
+        return in_array($transport, ['rest', 'grpc'], true) ? $transport : 'rest';
     }
 
     public function nowMillis(): int

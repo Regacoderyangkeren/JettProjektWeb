@@ -16,7 +16,7 @@ class HealthController extends Controller
                 'projectId' => $firebase->projectId(),
                 'database' => $firebase->firestoreDatabase(),
                 'credentialsConfigured' => $firebase->credentialsConfigured(),
-                'transport' => extension_loaded('grpc') ? 'grpc' : 'rest',
+                'transport' => $firebase->firestoreTransport(),
             ],
             'collections' => config('jettprojekt.collections'),
         ]);

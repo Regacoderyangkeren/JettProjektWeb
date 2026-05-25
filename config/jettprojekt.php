@@ -7,6 +7,7 @@ return [
         'project_number' => env('FIREBASE_PROJECT_NUMBER'),
         'storage_bucket' => env('FIREBASE_STORAGE_BUCKET'),
         'firestore_database' => env('FIRESTORE_DATABASE', env('FIRESTORE_DATABASE_ID', '(default)')),
+        'firestore_transport' => env('FIRESTORE_TRANSPORT', 'rest'),
         'region' => env('FIRESTORE_REGION', 'asia-southeast2'),
         'service_account_json' => env('FIREBASE_SERVICE_ACCOUNT_JSON'),
     ],
