@@ -1,34 +1,70 @@
 @extends('layouts.app')
 
 @section('body')
-    <main class="page">
-        <section class="shell dashboard">
-            <div class="topbar">
-                <div>
-                    <h1>Dashboard</h1>
-                    <p>{{ $profile['email'] ?? 'Signed in' }}</p>
-                </div>
+    <header class="page-header">
+        <div class="page-title">
+            <h1>Dashboard</h1>
+            <p>{{ trim(($profile['firstName'] ?? '').' '.($profile['lastName'] ?? '')) ?: ($profile['email'] ?? 'Signed in') }}</p>
+        </div>
 
-                <form class="logout-form" method="post" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit">Logout</button>
-                </form>
-            </div>
+        <form class="logout-form" method="post" action="{{ route('logout') }}">
+            @csrf
+            <button class="button-secondary" type="submit">Logout</button>
+        </form>
+    </header>
 
-            <div class="profile-grid">
-                <div class="profile-item">
-                    <strong>Name</strong>
-                    {{ trim(($profile['firstName'] ?? '').' '.($profile['lastName'] ?? '')) ?: '-' }}
-                </div>
-                <div class="profile-item">
-                    <strong>Alias</strong>
-                    {{ $profile['alias'] ?? '-' }}
-                </div>
-                <div class="profile-item">
-                    <strong>Status</strong>
-                    {{ $profile['status'] ?? 'ONLINE' }}
-                </div>
+    <section class="summary-grid">
+        <div class="metric">
+            <strong>{{ count($projects) }}</strong>
+            <span>Projects</span>
+        </div>
+        <div class="metric">
+            <strong>{{ count($tasks) }}</strong>
+            <span>Workload</span>
+        </div>
+        <div class="metric">
+            <strong>{{ collect($inboxItems)->where('read', false)->count() }}</strong>
+            <span>Unread inbox</span>
+        </div>
+        <div class="metric">
+            <strong>{{ count($notes) }}</strong>
+            <span>Notes</span>
+        </div>
+    </section>
+
+    <div class="content-grid" style="margin-top: 18px;">
+        <section class="panel">
+            <h2>Recent projects</h2>
+            <div class="stack">
+                @forelse (array_slice($projects, 0, 5) as $project)
+                    <a class="row-item" href="{{ route('projects.show', $project['id'] ?? '') }}">
+                        <span class="row-item-header">
+                            <h3>{{ $project['name'] ?? 'Untitled project' }}</h3>
+                            <span class="badge {{ strtolower($project['status'] ?? 'active') }}">{{ $project['status'] ?? 'ACTIVE' }}</span>
+                        </span>
+                        <span class="small muted">{{ $project['description'] ?? '' }}</span>
+                    </a>
+                @empty
+                    <div class="empty-state">No projects yet.</div>
+                @endforelse
             </div>
         </section>
-    </main>
+
+        <section class="panel">
+            <h2>Inbox</h2>
+            <div class="stack">
+                @forelse ($inboxItems as $item)
+                    <div class="row-item">
+                        <span class="row-item-header">
+                            <h3>{{ $item['title'] ?? 'Inbox item' }}</h3>
+                            <span class="badge">{{ $item['type'] ?? 'item' }}</span>
+                        </span>
+                        <span class="small muted">{{ $item['body'] ?? '' }}</span>
+                    </div>
+                @empty
+                    <div class="empty-state">Inbox is empty.</div>
+                @endforelse
+            </div>
+        </section>
+    </div>
 @endsection
