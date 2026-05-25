@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Exceptions\AuthenticatedProfileUnavailable;
 use App\Http\Controllers\Controller;
 use App\Services\JettAuthService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Kreait\Firebase\Auth\SignIn\FailedToSignIn;
+use Kreait\Firebase\Exception\Auth\EmailExists;
+use Kreait\Firebase\Exception\Auth\OperationNotAllowed;
+use Kreait\Firebase\Exception\Auth\WeakPassword;
 use Throwable;
 
 class FirebaseAuthController extends Controller
@@ -25,10 +30,36 @@ class FirebaseAuthController extends Controller
 
         try {
             $result = $auth->login($data['email'], $data['password']);
-        } catch (Throwable) {
+        } catch (AuthenticatedProfileUnavailable $exception) {
+            report($exception);
+
             return back()
                 ->withInput($request->only('email'))
-                ->withErrors(['email' => 'Email atau password belum cocok.']);
+                ->withErrors(['email' => 'Password diterima, tetapi profil belum bisa dimuat. Coba lagi sesaat.']);
+        } catch (FailedToSignIn $exception) {
+            if ($this->isDisabledAccount($exception)) {
+                return back()
+                    ->withInput($request->only('email'))
+                    ->withErrors(['email' => 'Akun ini sedang dinonaktifkan.']);
+            }
+
+            if ($this->isInvalidCredentials($exception)) {
+                return back()
+                    ->withInput($request->only('email'))
+                    ->withErrors(['email' => 'Email atau password belum cocok.']);
+            }
+
+            report($exception);
+
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['email' => 'Layanan login sedang bermasalah. Coba lagi sebentar.']);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors(['email' => 'Layanan login sedang bermasalah. Coba lagi sebentar.']);
         }
 
         $request->session()->regenerate();
@@ -58,12 +89,36 @@ class FirebaseAuthController extends Controller
 
         try {
             $registered = $auth->register($data);
-            $result = $auth->login($data['email'], $data['password']);
-            $profile = array_merge($registered['profile'], $result['profile']);
-        } catch (Throwable) {
+        } catch (EmailExists) {
             return back()
                 ->withInput($request->except('password', 'password_confirmation'))
-                ->withErrors(['email' => 'Akun belum bisa dibuat. Cek lagi datanya atau coba beberapa saat lagi.']);
+                ->withErrors(['email' => 'Email ini sudah terdaftar. Silakan masuk.']);
+        } catch (WeakPassword) {
+            return back()
+                ->withInput($request->except('password', 'password_confirmation'))
+                ->withErrors(['password' => 'Password belum memenuhi ketentuan Firebase.']);
+        } catch (OperationNotAllowed $exception) {
+            report($exception);
+
+            return back()
+                ->withInput($request->except('password', 'password_confirmation'))
+                ->withErrors(['email' => 'Pendaftaran email dan password belum diaktifkan.']);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return back()
+                ->withInput($request->except('password', 'password_confirmation'))
+                ->withErrors(['email' => 'Layanan pendaftaran sedang bermasalah. Coba lagi sebentar.']);
+        }
+
+        try {
+            $result = $auth->login($data['email'], $data['password']);
+            $profile = array_merge($registered['profile'], $result['profile']);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Akun sudah dibuat, tetapi sesi belum dapat dibuka. Silakan masuk lagi.']);
         }
 
         $request->session()->regenerate();
@@ -92,5 +147,19 @@ class FirebaseAuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    private function isInvalidCredentials(FailedToSignIn $exception): bool
+    {
+        $message = strtoupper($exception->getMessage());
+
+        return str_contains($message, 'INVALID_LOGIN_CREDENTIALS')
+            || str_contains($message, 'INVALID_PASSWORD')
+            || str_contains($message, 'EMAIL_NOT_FOUND');
+    }
+
+    private function isDisabledAccount(FailedToSignIn $exception): bool
+    {
+        return str_contains(strtoupper($exception->getMessage()), 'USER_DISABLED');
     }
 }

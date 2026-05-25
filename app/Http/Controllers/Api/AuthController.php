@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\AuthenticatedProfileUnavailable;
 use App\Http\Controllers\Controller;
 use App\Services\JettAuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Kreait\Firebase\Auth\SignIn\FailedToSignIn;
+use Kreait\Firebase\Exception\Auth\EmailExists;
+use Kreait\Firebase\Exception\Auth\OperationNotAllowed;
+use Kreait\Firebase\Exception\Auth\WeakPassword;
 use Throwable;
 
 class AuthController extends Controller
@@ -28,11 +33,30 @@ class AuthController extends Controller
                 'uid' => $result['uid'],
                 'user' => $result['profile'],
             ], 201);
-        } catch (Throwable $exception) {
+        } catch (EmailExists) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Unable to register this user.',
+                'message' => 'This email is already registered.',
+            ], 409);
+        } catch (WeakPassword) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'The password does not meet Firebase requirements.',
             ], 422);
+        } catch (OperationNotAllowed $exception) {
+            report($exception);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Email and password registration is unavailable.',
+            ], 503);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Registration service is temporarily unavailable.',
+            ], 503);
         }
     }
 
@@ -57,11 +81,41 @@ class AuthController extends Controller
                     'expiresIn' => $result['expiresIn'],
                 ],
             ]);
-        } catch (Throwable $exception) {
+        } catch (AuthenticatedProfileUnavailable $exception) {
+            report($exception);
+
             return response()->json([
                 'ok' => false,
-                'message' => 'Invalid email or password.',
-            ], 401);
+                'message' => 'Authenticated, but the user profile is temporarily unavailable.',
+            ], 503);
+        } catch (FailedToSignIn $exception) {
+            if ($this->isDisabledAccount($exception)) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'This account is disabled.',
+                ], 403);
+            }
+
+            if ($this->isInvalidCredentials($exception)) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Invalid email or password.',
+                ], 401);
+            }
+
+            report($exception);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Authentication service is temporarily unavailable.',
+            ], 503);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'ok' => false,
+                'message' => 'Authentication service is temporarily unavailable.',
+            ], 503);
         }
     }
 
@@ -91,5 +145,19 @@ class AuthController extends Controller
                 'message' => 'Invalid or missing bearer token.',
             ], 401);
         }
+    }
+
+    private function isInvalidCredentials(FailedToSignIn $exception): bool
+    {
+        $message = strtoupper($exception->getMessage());
+
+        return str_contains($message, 'INVALID_LOGIN_CREDENTIALS')
+            || str_contains($message, 'INVALID_PASSWORD')
+            || str_contains($message, 'EMAIL_NOT_FOUND');
+    }
+
+    private function isDisabledAccount(FailedToSignIn $exception): bool
+    {
+        return str_contains(strtoupper($exception->getMessage()), 'USER_DISABLED');
     }
 }

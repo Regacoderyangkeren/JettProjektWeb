@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\AuthenticatedProfileUnavailable;
 use App\Services\Firebase\FirebaseService;
 use Google\Cloud\Firestore\DocumentReference;
 use Kreait\Firebase\Auth\SignInResult;
@@ -10,9 +11,7 @@ use Throwable;
 
 class JettAuthService
 {
-    public function __construct(private readonly FirebaseService $firebase)
-    {
-    }
+    public function __construct(private readonly FirebaseService $firebase) {}
 
     public function register(array $data): array
     {
@@ -42,14 +41,23 @@ class JettAuthService
     {
         $result = $this->firebase->auth()->signInWithEmailAndPassword($email, $password);
         $uid = $this->requireUid($result);
-        $profile = $this->ensureUserDocument($uid, $email);
+
+        try {
+            $profile = $this->ensureUserDocument($uid, $email);
+        } catch (Throwable $exception) {
+            throw new AuthenticatedProfileUnavailable($exception);
+        }
 
         $presence = [
             'status' => 'ONLINE',
             'lastActiveAt' => $this->firebase->nowMillis(),
         ];
 
-        $this->userDocument($uid)->set($presence, ['merge' => true]);
+        try {
+            $this->userDocument($uid)->set($presence, ['merge' => true]);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
 
         return [
             'uid' => $uid,
