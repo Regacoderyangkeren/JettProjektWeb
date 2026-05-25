@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\InboxPageController;
 use App\Http\Controllers\Web\NotePageController;
 use App\Http\Controllers\Web\ProjectPageController;
 use App\Http\Controllers\Web\TaskPageController;
+use App\Http\Controllers\Web\TeamPageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -36,6 +37,16 @@ Route::middleware('firebase.session')->group(function (): void {
     Route::patch('/tasks/{taskId}/status', [TaskPageController::class, 'status'])->name('tasks.status');
     Route::post('/tasks/{taskId}/review', [TaskPageController::class, 'review'])->name('tasks.review');
     Route::delete('/tasks/{taskId}', [TaskPageController::class, 'destroy'])->name('tasks.destroy');
+
+    Route::get('/teams', [TeamPageController::class, 'index'])->name('teams.index');
+    Route::post('/teams', [TeamPageController::class, 'store'])->name('teams.store');
+    Route::get('/teams/{teamId}', [TeamPageController::class, 'show'])->name('teams.show');
+    Route::post('/teams/{teamId}/invites', [TeamPageController::class, 'invite'])->name('teams.invites.store');
+    Route::post('/team-invites/{inviteId}/accept', [TeamPageController::class, 'accept'])->name('teams.invites.accept');
+    Route::post('/team-invites/{inviteId}/decline', [TeamPageController::class, 'decline'])->name('teams.invites.decline');
+    Route::delete('/teams/{teamId}/members/{userId}', [TeamPageController::class, 'removeMember'])->name('teams.members.destroy');
+    Route::post('/teams/{teamId}/leave', [TeamPageController::class, 'leave'])->name('teams.leave');
+    Route::delete('/teams/{teamId}', [TeamPageController::class, 'destroy'])->name('teams.destroy');
 
     Route::get('/notes', [NotePageController::class, 'index'])->name('notes.index');
     Route::post('/notes', [NotePageController::class, 'store'])->name('notes.store');

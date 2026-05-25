@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\InboxController;
 use App\Http\Controllers\Api\NoteController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\TeamController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health/firebase', [HealthController::class, 'firebase'])->name('api.health.firebase');
@@ -39,6 +40,16 @@ Route::middleware('firebase.bearer')->group(function (): void {
     Route::post('/tasks/{taskId}/attachments', [TaskController::class, 'addAttachment'])->name('api.tasks.attachments.store');
     Route::delete('/tasks/{taskId}/attachments', [TaskController::class, 'removeAttachment'])->name('api.tasks.attachments.destroy');
     Route::delete('/tasks/{taskId}', [TaskController::class, 'destroy'])->name('api.tasks.destroy');
+
+    Route::get('/teams', [TeamController::class, 'index'])->name('api.teams.index');
+    Route::post('/teams', [TeamController::class, 'store'])->name('api.teams.store');
+    Route::get('/teams/{teamId}', [TeamController::class, 'show'])->name('api.teams.show');
+    Route::post('/teams/{teamId}/invites', [TeamController::class, 'invite'])->name('api.teams.invites.store');
+    Route::post('/team-invites/{inviteId}/accept', [TeamController::class, 'accept'])->name('api.teams.invites.accept');
+    Route::post('/team-invites/{inviteId}/decline', [TeamController::class, 'decline'])->name('api.teams.invites.decline');
+    Route::delete('/teams/{teamId}/members/{userId}', [TeamController::class, 'removeMember'])->name('api.teams.members.destroy');
+    Route::post('/teams/{teamId}/leave', [TeamController::class, 'leave'])->name('api.teams.leave');
+    Route::delete('/teams/{teamId}', [TeamController::class, 'destroy'])->name('api.teams.destroy');
 
     Route::get('/notes', [NoteController::class, 'index'])->name('api.notes.index');
     Route::post('/notes', [NoteController::class, 'store'])->name('api.notes.store');

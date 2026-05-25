@@ -1,0 +1,121 @@
+@extends('layouts.app')
+
+@php
+    $isLeader = ($team['leaderId'] ?? '') === $currentUserId;
+@endphp
+
+@section('body')
+    <header class="page-header">
+        <div class="page-title">
+            <h1>{{ $team['name'] ?? 'Team' }}</h1>
+            <p>{{ $team['description'] ?? '' }}</p>
+        </div>
+        <div class="toolbar">
+            @if ($isLeader)
+                <form class="inline-form" method="post" action="{{ route('teams.destroy', $team['id'] ?? '') }}">
+                    @csrf
+                    @method('delete')
+                    <button class="button-danger" type="submit">Delete team</button>
+                </form>
+            @else
+                <form class="inline-form" method="post" action="{{ route('teams.leave', $team['id'] ?? '') }}">
+                    @csrf
+                    <button class="button-secondary" type="submit">Leave team</button>
+                </form>
+            @endif
+        </div>
+    </header>
+
+    <div class="content-grid">
+        <div>
+            <section class="panel">
+                <h2>Members</h2>
+                <div class="stack">
+                    @forelse ($members as $member)
+                        @php
+                            $user = $member['user'] ?? [];
+                            $id = $user['id'] ?? '';
+                            $isTeamLeader = $id === ($team['leaderId'] ?? '');
+                        @endphp
+                        <div class="row-item">
+                            <div class="person-row">
+                                @include('connections.partials.avatar', ['user' => $user])
+                                <div>
+                                    <h3>{{ trim(($user['firstName'] ?? '').' '.($user['lastName'] ?? '')) ?: ($user['alias'] ?? $user['email'] ?? 'Member') }}</h3>
+                                    <span class="small muted">{{ $isTeamLeader ? 'Leader' : 'Member' }}</span>
+                                </div>
+                            </div>
+                            @if ($isLeader && ! $isTeamLeader)
+                                <form class="inline-form" method="post" action="{{ route('teams.members.destroy', [$team['id'] ?? '', $id]) }}">
+                                    @csrf
+                                    @method('delete')
+                                    <button class="button-danger" type="submit">Remove</button>
+                                </form>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="empty-state">No members found.</div>
+                    @endforelse
+                </div>
+            </section>
+
+            <section class="panel">
+                <h2>Projects</h2>
+                <div class="stack">
+                    @forelse ($linkedProjects as $project)
+                        <a class="row-item" href="{{ route('projects.show', $project['id'] ?? '') }}">
+                            <span class="row-item-header">
+                                <h3>{{ $project['name'] ?? 'Untitled project' }}</h3>
+                                <span class="badge {{ strtolower($project['status'] ?? 'active') }}">{{ $project['status'] ?? 'ACTIVE' }}</span>
+                            </span>
+                            <span class="small muted">{{ $project['description'] ?? '' }}</span>
+                        </a>
+                    @empty
+                        <div class="empty-state">No linked projects.</div>
+                    @endforelse
+                </div>
+            </section>
+        </div>
+
+        <div>
+            @if ($isLeader)
+                <section class="panel">
+                    <h2>Invite member</h2>
+                    @if (count($inviteCandidates) > 0)
+                        <form method="post" action="{{ route('teams.invites.store', $team['id'] ?? '') }}">
+                            @csrf
+                            <label>
+                                Connection
+                                <select name="userId" required>
+                                    <option value="">Select member</option>
+                                    @foreach ($inviteCandidates as $user)
+                                        <option value="{{ $user['id'] ?? '' }}">
+                                            {{ trim(($user['firstName'] ?? '').' '.($user['lastName'] ?? '')) ?: ($user['alias'] ?? $user['email'] ?? 'Member') }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            <button type="submit">Send invite</button>
+                        </form>
+                    @else
+                        <div class="empty-state">No available connections to invite.</div>
+                    @endif
+                </section>
+
+                <section class="panel">
+                    <h2>Pending invitations</h2>
+                    <div class="stack">
+                        @forelse ($pendingInvites as $invite)
+                            <div class="row-item">
+                                <h3>{{ '@'.($invite['invitedAlias'] ?? 'member') }}</h3>
+                                <span class="badge review">PENDING</span>
+                            </div>
+                        @empty
+                            <div class="empty-state">No pending invitations.</div>
+                        @endforelse
+                    </div>
+                </section>
+            @endif
+        </div>
+    </div>
+@endsection

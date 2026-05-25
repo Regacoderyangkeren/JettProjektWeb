@@ -377,9 +377,15 @@
                 resize: vertical;
             }
 
-            input:focus {
+            input:focus,
+            textarea:focus,
+            select:focus {
                 border-color: var(--accent);
                 outline: 3px solid rgba(37, 99, 235, 0.12);
+            }
+
+            select[multiple] {
+                min-height: 116px;
             }
 
             button {
@@ -521,6 +527,7 @@
                     <nav class="nav-list">
                         <a class="{{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
                         <a class="{{ request()->routeIs('projects.*') || request()->routeIs('tasks.*') ? 'active' : '' }}" href="{{ route('projects.index') }}">Projects</a>
+                        <a class="{{ request()->routeIs('teams.*') ? 'active' : '' }}" href="{{ route('teams.index') }}">Teams</a>
                         <a class="{{ request()->routeIs('connections.*') ? 'active' : '' }}" href="{{ route('connections.index') }}">Connections</a>
                         <a class="{{ request()->routeIs('notes.*') ? 'active' : '' }}" href="{{ route('notes.index') }}">Notes</a>
                         <a class="{{ request()->routeIs('inbox.*') ? 'active' : '' }}" href="{{ route('inbox.index') }}">Inbox</a>

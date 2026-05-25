@@ -45,8 +45,15 @@
                         <input name="colorHex" value="{{ old('colorHex', '#2F80ED') }}">
                     </label>
                     <label>
-                        Team name
-                        <input name="teamName" value="{{ old('teamName') }}">
+                        Team
+                        <select name="teamId">
+                            <option value="">Personal project</option>
+                            @foreach (($availableTeams ?? []) as $team)
+                                <option value="{{ $team['id'] ?? '' }}" @selected(old('teamId') === ($team['id'] ?? ''))>
+                                    {{ $team['name'] ?? 'Team' }}
+                                </option>
+                            @endforeach
+                        </select>
                     </label>
                     <label>
                         Start

@@ -42,12 +42,13 @@ class WebViewTest extends TestCase
         ])->render();
 
         $inboxHtml = view('inbox.index', [
-            'items' => [$this->inboxItem()],
+            'items' => [$this->teamInvite()],
             'connectionItems' => [],
         ])->render();
 
         $this->assertStringContainsString('Saved notes', $notesHtml);
         $this->assertStringContainsString('Team and task inbox', $inboxHtml);
+        $this->assertStringContainsString('Accept', $inboxHtml);
     }
 
     public function test_connections_view_renders(): void
@@ -69,6 +70,33 @@ class WebViewTest extends TestCase
 
         $this->assertStringContainsString('Connections', $html);
         $this->assertStringContainsString('Pending requests', $html);
+    }
+
+    public function test_team_views_render(): void
+    {
+        $team = $this->team();
+        $indexHtml = view('teams.index', [
+            'teams' => [$team],
+            'incomingInvites' => [$this->teamInvite()],
+            'connectedUsers' => [$this->user('user_2', 'Invite', 'ONLINE')],
+        ])->render();
+
+        $showHtml = view('teams.show', [
+            'team' => $team,
+            'members' => [
+                ['user' => $this->user('user_1', 'Leader', 'ONLINE'), 'tags' => ['leader']],
+                ['user' => $this->user('user_2', 'Member', 'STANDBY'), 'tags' => ['member']],
+            ],
+            'pendingInvites' => [$this->teamInvite()],
+            'inviteCandidates' => [$this->user('user_3', 'Candidate', 'OFFLINE')],
+            'linkedProjects' => [$this->project()],
+            'currentUserId' => 'user_1',
+        ])->render();
+
+        $this->assertStringContainsString('Your teams', $indexHtml);
+        $this->assertStringContainsString('Invitations', $indexHtml);
+        $this->assertStringContainsString('Invite member', $showHtml);
+        $this->assertStringContainsString('Pending invitations', $showHtml);
     }
 
     private function project(): array
@@ -115,6 +143,35 @@ class WebViewTest extends TestCase
             'content' => 'Note body',
             'date' => '2026-05-26',
             'time' => '10:00',
+        ];
+    }
+
+    private function team(): array
+    {
+        return [
+            'id' => 'team_1',
+            'name' => 'Sample team',
+            'description' => 'A test team',
+            'leaderId' => 'user_1',
+            'leaderName' => 'Leader User',
+            'memberIds' => ['user_1', 'user_2'],
+            'pendingMemberIds' => ['user_3'],
+        ];
+    }
+
+    private function teamInvite(): array
+    {
+        return [
+            'id' => 'invite_1',
+            'inviteId' => 'invite_1',
+            'teamId' => 'team_1',
+            'teamName' => 'Sample team',
+            'inviterName' => 'Leader User',
+            'invitedAlias' => 'candidate',
+            'title' => 'Team invite',
+            'body' => 'Leader User invited you to join Sample team',
+            'type' => 'team_invite',
+            'read' => false,
         ];
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Services\ProjectService;
 use App\Services\TaskService;
+use App\Services\TeamService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -12,33 +13,45 @@ use Throwable;
 
 class ProjectPageController extends Controller
 {
-    public function index(Request $request, ProjectService $projects): View
+    public function index(Request $request, ProjectService $projects, TeamService $teams): View
     {
+        $uid = $this->uid($request);
+
         return view('projects.index', [
-            'projects' => $this->attempt(fn () => $projects->forMember($this->uid($request)), []),
+            'projects' => $this->attempt(fn () => $projects->forMember($uid), []),
+            'availableTeams' => $this->attempt(fn () => $teams->ledBy($uid), []),
         ]);
     }
 
-    public function store(Request $request, ProjectService $projects): RedirectResponse
+    public function store(Request $request, ProjectService $projects, TeamService $teams): RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:160'],
             'description' => ['nullable', 'string'],
             'colorHex' => ['nullable', 'string', 'max:20'],
             'teamId' => ['nullable', 'string', 'max:120'],
-            'teamName' => ['nullable', 'string', 'max:160'],
             'startAt' => ['nullable', 'date'],
             'endAt' => ['nullable', 'date'],
         ]);
 
-        $payload = array_merge($data, [
-            'ownerId' => $this->uid($request),
-            'memberIds' => [$this->uid($request)],
-            'startAt' => $this->dateMillis($data['startAt'] ?? null),
-            'endAt' => $this->dateMillis($data['endAt'] ?? null),
-        ]);
-
         try {
+            $uid = $this->uid($request);
+            $memberIds = [$uid];
+            $teamId = (string) ($data['teamId'] ?? '');
+            $data['teamName'] = '';
+
+            if ($teamId !== '') {
+                $team = $teams->requireLeader($teamId, $uid);
+                $data['teamName'] = (string) ($team['name'] ?? '');
+                $memberIds = $team['memberIds'] ?? $memberIds;
+            }
+
+            $payload = array_merge($data, [
+                'ownerId' => $uid,
+                'memberIds' => $memberIds,
+                'startAt' => $this->dateMillis($data['startAt'] ?? null),
+                'endAt' => $this->dateMillis($data['endAt'] ?? null),
+            ]);
             $project = $projects->create($payload, $this->uid($request));
 
             return redirect()->route('projects.show', $project['id'])->with('status', 'Project created.');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\ProjectService;
+use App\Services\TeamService;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,7 +29,7 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function store(Request $request, ProjectService $projects): JsonResponse
+    public function store(Request $request, ProjectService $projects, TeamService $teams): JsonResponse
     {
         $data = $request->validate([
             'id' => ['nullable', 'string', 'max:120'],
@@ -44,10 +45,23 @@ class ProjectController extends Controller
             'endAt' => ['nullable', 'integer'],
         ]);
 
-        return response()->json([
-            'ok' => true,
-            'project' => $projects->create($data, $this->currentUserId($request)),
-        ], 201);
+        try {
+            $userId = $this->currentUserId($request);
+            $teamId = is_string($data['teamId'] ?? null) ? trim($data['teamId']) : '';
+
+            if ($teamId !== '') {
+                $team = $teams->requireLeader($teamId, $userId);
+                $data['teamName'] = (string) ($team['name'] ?? '');
+                $data['memberIds'] = $team['memberIds'] ?? [$userId];
+            }
+
+            return response()->json([
+                'ok' => true,
+                'project' => $projects->create($data, $userId),
+            ], 201);
+        } catch (Throwable $exception) {
+            return $this->error($exception);
+        }
     }
 
     public function show(string $projectId, ProjectService $projects): JsonResponse
