@@ -18,6 +18,57 @@ class TeamService
 
     private const DECLINED = 'declined';
 
+    private const RESERVED_TAG_IDS = ['leader', 'member'];
+
+    private const TAG_PERMISSION_KEYS = [
+        'project.create',
+        'project.read',
+        'project.update',
+        'project.delete',
+        'project.setting.update',
+        'task.create',
+        'task.read',
+        'task.update',
+        'task.delete',
+        'task.todo.create',
+        'task.research.create',
+        'task.issue.create',
+        'task.improvement.create',
+        'task.request.create',
+        'task.assign_member',
+        'task.assign_reviewer',
+        'task.set_priority',
+        'task.pin',
+        'task.mark_done',
+        'task.review.resolve',
+        'task.checklist.update',
+        'task_attachment.create',
+        'task_attachment.delete',
+        'subtask.create',
+        'subtask.update',
+        'subtask.delete',
+        'calendar.read',
+        'gantt.create',
+        'gantt.read',
+        'gantt.update',
+        'gantt.delete',
+        'tag.create',
+        'tag.read',
+        'tag.update',
+        'tag.delete',
+        'tag.assign',
+        'chat.read',
+        'chat.send',
+        'chat.edit_own',
+        'chat.edit_any',
+        'chat.delete_own',
+        'chat.delete_any',
+        'chat.react',
+        'chat.pin',
+        'chat.attach_file',
+        'chat.attach_media',
+    ];
+
     public function __construct(private readonly FirebaseService $firebase) {}
 
     public function forMember(string $userId): array
@@ -135,23 +186,101 @@ class TeamService
     public function detail(string $teamId, string $currentUserId): array
     {
         $team = $this->requireMember($teamId, $currentUserId);
+        $tags = $this->tags($teamId);
+        $tagsById = [];
+
+        foreach ($tags as $tag) {
+            $tagsById[$tag['id'] ?? ''] = $tag;
+        }
+
         $members = [];
 
         foreach ($this->uniqueStrings($team['memberIds'] ?? []) as $memberId) {
             $snapshot = $this->userDocument($memberId)->snapshot();
+            $fallbackTag = $memberId === ($team['leaderId'] ?? '') ? 'leader' : 'member';
+            $tagIds = $this->uniqueStrings($team['memberTags'][$memberId] ?? [$fallbackTag]);
+            if ($tagIds === []) {
+                $tagIds = [$fallbackTag];
+            }
+
             $members[] = [
                 'user' => $snapshot->exists() ? $snapshot->data() : ['id' => $memberId],
                 'joinedAt' => (int) ($team['memberJoinedAt'][$memberId] ?? $team['createdAt'] ?? 0),
-                'tags' => $team['memberTags'][$memberId] ?? [$memberId === ($team['leaderId'] ?? '') ? 'leader' : 'member'],
+                'tags' => array_map(fn (string $tagId): string => (string) ($tagsById[$tagId]['name'] ?? $tagId), $tagIds),
+                'tagIds' => $tagIds,
+                'tagColors' => array_map(fn (string $tagId): string => (string) ($tagsById[$tagId]['colorHex'] ?? $this->defaultTagColor($tagId)), $tagIds),
             ];
         }
 
         return [
             'team' => $team,
             'members' => $members,
+            'tags' => $tags,
             'pendingInvites' => ($team['leaderId'] ?? '') === $currentUserId ? $this->pendingInvitesForTeam($teamId) : [],
             'inviteCandidates' => ($team['leaderId'] ?? '') === $currentUserId ? $this->inviteCandidates($team, $currentUserId) : [],
         ];
+    }
+
+    public function createTag(string $teamId, string $leaderId, array $data): array
+    {
+        $team = $this->requireLeader($teamId, $leaderId);
+        $name = $this->requiredTagName($data);
+        $tagId = $this->tagIdFromName($name);
+
+        if (in_array($tagId, self::RESERVED_TAG_IDS, true)) {
+            throw new DomainException('That tag is reserved.');
+        }
+
+        $this->assertUniqueTag($teamId, $tagId, $name);
+        $now = $this->firebase->nowMillis();
+        $tag = [
+            'id' => $tagId,
+            'teamId' => $teamId,
+            'name' => $name,
+            'colorHex' => $this->tagColor($data['colorHex'] ?? null),
+            'permissions' => $this->defaultTagPermissions(),
+            'createdBy' => $leaderId,
+            'createdAt' => $now,
+            'updatedAt' => $now,
+            'system' => false,
+        ];
+
+        $this->tagDocument($teamId, $tagId)->set($tag);
+        $this->storeTagAssignments($team, $tagId, $this->uniqueStrings($data['assignedMemberIds'] ?? []), $now);
+        $this->recordTagActivity($team, 'Created tag', 'created tag '.$name, $now);
+
+        return $tag;
+    }
+
+    public function updateTag(string $teamId, string $leaderId, string $tagId, array $data): array
+    {
+        $team = $this->requireLeader($teamId, $leaderId);
+        $tagReference = $this->tagDocument($teamId, $tagId);
+        $snapshot = $tagReference->snapshot();
+
+        if (! $snapshot->exists()) {
+            throw new RuntimeException('Tag not found.');
+        }
+
+        $tag = $snapshot->data();
+        if (($tag['system'] ?? false) || in_array($tagId, self::RESERVED_TAG_IDS, true)) {
+            throw new DomainException('System tags cannot be edited here.');
+        }
+
+        $name = $this->requiredTagName($data);
+        $this->assertUniqueTag($teamId, $tagId, $name, $tagId);
+        $now = $this->firebase->nowMillis();
+        $updatedTag = array_merge($tag, [
+            'name' => $name,
+            'colorHex' => $this->tagColor($data['colorHex'] ?? null),
+            'updatedAt' => $now,
+        ]);
+
+        $tagReference->set($updatedTag, ['merge' => true]);
+        $this->storeTagAssignments($team, $tagId, $this->uniqueStrings($data['assignedMemberIds'] ?? []), $now);
+        $this->recordTagActivity($team, 'Updated tag', 'updated tag '.$name, $now);
+
+        return $updatedTag;
     }
 
     public function incomingInvites(string $userId): array
@@ -374,6 +503,75 @@ class TeamService
         ));
     }
 
+    private function tags(string $teamId): array
+    {
+        $tags = [];
+
+        foreach ($this->document($teamId)->collection('tags')->documents() as $document) {
+            if ($document->exists()) {
+                $tags[] = $document->data();
+            }
+        }
+
+        usort($tags, fn (array $left, array $right): int => ((! ($left['system'] ?? false)) <=> (! ($right['system'] ?? false))) ?: strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? '')));
+
+        return $tags;
+    }
+
+    private function storeTagAssignments(array $team, string $tagId, array $assignedMemberIds, int $now): void
+    {
+        $memberIds = $this->uniqueStrings($team['memberIds'] ?? []);
+        $assignedMemberIds = array_values(array_intersect($assignedMemberIds, $memberIds));
+        $memberTags = is_array($team['memberTags'] ?? null) ? $team['memberTags'] : [];
+
+        foreach ($memberIds as $memberId) {
+            $fallbackTag = $memberId === ($team['leaderId'] ?? '') ? 'leader' : 'member';
+            $tagIds = $this->uniqueStrings($memberTags[$memberId] ?? [$fallbackTag]);
+            $tagIds = array_values(array_filter($tagIds, fn (string $id): bool => $id !== $tagId));
+
+            if (in_array($memberId, $assignedMemberIds, true)) {
+                $tagIds[] = $tagId;
+            }
+
+            if (! in_array($fallbackTag, $tagIds, true)) {
+                $tagIds[] = $fallbackTag;
+            }
+
+            $memberTags[$memberId] = array_values(array_unique($tagIds));
+        }
+
+        $this->document((string) $team['id'])->set([
+            'memberTags' => $memberTags,
+            'updatedAt' => $now,
+        ], ['merge' => true]);
+    }
+
+    private function recordTagActivity(array $team, string $title, string $description, int $now): void
+    {
+        $this->document((string) $team['id'])->collection('activity')->newDocument()->set([
+            'teamId' => $team['id'],
+            'actorId' => $team['leaderId'] ?? '',
+            'actorName' => $team['leaderName'] ?? 'Leader',
+            'title' => $title,
+            'description' => ($team['leaderName'] ?? 'Leader').' '.$description,
+            'createdAt' => $now,
+        ]);
+    }
+
+    private function assertUniqueTag(string $teamId, string $tagId, string $name, ?string $ignoreTagId = null): void
+    {
+        foreach ($this->tags($teamId) as $existing) {
+            $existingId = (string) ($existing['id'] ?? '');
+            if ($ignoreTagId !== null && $existingId === $ignoreTagId) {
+                continue;
+            }
+
+            if ($existingId === $tagId || strcasecmp((string) ($existing['name'] ?? ''), $name) === 0) {
+                throw new DomainException('Tag already exists.');
+            }
+        }
+    }
+
     private function writeInvite(Transaction $transaction, array $team, array $inviter, array $invitedUser, int $now): array
     {
         $reference = $this->inviteCollection()->newDocument();
@@ -448,6 +646,51 @@ class TeamService
         return is_string($data[$key] ?? null) ? trim($data[$key]) : '';
     }
 
+    private function requiredTagName(array $data): string
+    {
+        $name = $this->stringValue($data, 'name');
+
+        if ($name === '') {
+            throw new DomainException('Tag name is required.');
+        }
+
+        return $name;
+    }
+
+    private function tagIdFromName(string $name): string
+    {
+        return str($name)->lower()->replaceMatches('/[^a-z0-9_-]+/', '-')->trim('-')->toString()
+            ?: 'tag-'.$this->firebase->nowMillis();
+    }
+
+    private function tagColor(mixed $color): string
+    {
+        $color = is_string($color) ? strtoupper(trim($color)) : '';
+
+        return preg_match('/^#[0-9A-F]{6}$/', $color) === 1 ? $color : '#6C5CE7';
+    }
+
+    private function defaultTagColor(string $tagId): string
+    {
+        return match ($tagId) {
+            'leader' => '#2F80ED',
+            'member' => '#27AE60',
+            'project-planner' => '#2D9CDB',
+            'task-manager' => '#9B51E0',
+            'task-contributor' => '#00A896',
+            'reviewer' => '#F2994A',
+            'researcher' => '#00A8A8',
+            'chat-moderator' => '#F06795',
+            'viewer' => '#64748B',
+            default => '#6C5CE7',
+        };
+    }
+
+    private function defaultTagPermissions(): array
+    {
+        return array_fill_keys(self::TAG_PERMISSION_KEYS, false);
+    }
+
     private function uniqueStrings(mixed $values): array
     {
         if (! is_array($values)) {
@@ -482,6 +725,11 @@ class TeamService
     private function inviteDocument(string $inviteId): DocumentReference
     {
         return $this->inviteCollection()->document($inviteId);
+    }
+
+    private function tagDocument(string $teamId, string $tagId): DocumentReference
+    {
+        return $this->document($teamId)->collection('tags')->document($tagId);
     }
 
     private function userDocument(string $userId): DocumentReference

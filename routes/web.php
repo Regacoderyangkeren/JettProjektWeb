@@ -45,6 +45,8 @@ Route::middleware('firebase.session')->group(function (): void {
     Route::get('/teams/{teamId}/chat', [ChatPageController::class, 'team'])->name('teams.chat');
     Route::post('/teams/{teamId}/chat/messages', [ChatPageController::class, 'sendTeam'])->name('teams.chat.messages.store');
     Route::post('/teams/{teamId}/invites', [TeamPageController::class, 'invite'])->name('teams.invites.store');
+    Route::post('/teams/{teamId}/tags', [TeamPageController::class, 'storeTag'])->name('teams.tags.store');
+    Route::patch('/teams/{teamId}/tags/{tagId}', [TeamPageController::class, 'updateTag'])->name('teams.tags.update');
     Route::post('/team-invites/{inviteId}/accept', [TeamPageController::class, 'accept'])->name('teams.invites.accept');
     Route::post('/team-invites/{inviteId}/decline', [TeamPageController::class, 'decline'])->name('teams.invites.decline');
     Route::delete('/teams/{teamId}/members/{userId}', [TeamPageController::class, 'removeMember'])->name('teams.members.destroy');

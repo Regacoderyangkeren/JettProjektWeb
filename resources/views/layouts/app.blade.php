@@ -220,6 +220,25 @@
                 color: var(--danger);
             }
 
+            .tag-badges {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
+                margin-top: 5px;
+            }
+
+            .tag-badge {
+                display: inline-flex;
+                align-items: center;
+                min-height: 22px;
+                border: 1px solid;
+                border-radius: 999px;
+                padding: 2px 8px;
+                background: #ffffff;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
             .person-row {
                 display: grid;
                 grid-template-columns: 44px minmax(0, 1fr);
@@ -455,6 +474,60 @@
 
             select[multiple] {
                 min-height: 116px;
+            }
+
+            .color-field {
+                padding: 5px;
+                cursor: pointer;
+            }
+
+            .checkbox-fieldset {
+                margin: 0;
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                padding: 11px 12px 12px;
+            }
+
+            .checkbox-fieldset legend {
+                padding: 0 5px;
+                color: #324055;
+                font-size: 13px;
+                font-weight: 650;
+            }
+
+            .checkbox-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+                gap: 8px 12px;
+            }
+
+            .checkbox-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-height: 30px;
+                font-weight: 500;
+            }
+
+            .checkbox-row input[type="checkbox"] {
+                width: 18px;
+                min-height: 18px;
+                margin: 0;
+            }
+
+            .tag-editor-list {
+                margin-top: 18px;
+            }
+
+            .tag-edit-form {
+                margin-top: 0;
+            }
+
+            .tag-system-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
             }
 
             button {

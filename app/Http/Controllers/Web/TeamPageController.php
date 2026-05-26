@@ -75,6 +75,32 @@ class TeamPageController extends Controller
         }
     }
 
+    public function storeTag(Request $request, string $teamId, TeamService $teams): RedirectResponse
+    {
+        $data = $this->validateTag($request);
+
+        try {
+            $teams->createTag($teamId, $this->uid($request), $data);
+
+            return back()->with('status', 'Tag created.');
+        } catch (Throwable $exception) {
+            return back()->withInput()->withErrors(['team' => $exception->getMessage()]);
+        }
+    }
+
+    public function updateTag(Request $request, string $teamId, string $tagId, TeamService $teams): RedirectResponse
+    {
+        $data = $this->validateTag($request);
+
+        try {
+            $teams->updateTag($teamId, $this->uid($request), $tagId, $data);
+
+            return back()->with('status', 'Tag updated.');
+        } catch (Throwable $exception) {
+            return back()->withInput()->withErrors(['team' => $exception->getMessage()]);
+        }
+    }
+
     public function accept(Request $request, string $inviteId, TeamService $teams): RedirectResponse
     {
         try {
@@ -133,6 +159,16 @@ class TeamPageController extends Controller
     private function uid(Request $request): string
     {
         return (string) $request->session()->get('firebase.uid', '');
+    }
+
+    private function validateTag(Request $request): array
+    {
+        return $request->validate([
+            'name' => ['required', 'string', 'max:48'],
+            'colorHex' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'assignedMemberIds' => ['nullable', 'array'],
+            'assignedMemberIds.*' => ['string', 'max:120'],
+        ]);
     }
 
     private function attempt(callable $callback, mixed $fallback): mixed

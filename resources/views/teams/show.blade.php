@@ -43,7 +43,15 @@
                                 @include('connections.partials.avatar', ['user' => $user])
                                 <div>
                                     <h3>{{ trim(($user['firstName'] ?? '').' '.($user['lastName'] ?? '')) ?: ($user['alias'] ?? $user['email'] ?? 'Member') }}</h3>
-                                    <span class="small muted">{{ $isTeamLeader ? 'Leader' : 'Member' }}</span>
+                                    <div class="tag-badges">
+                                        @foreach (($member['tags'] ?? [$isTeamLeader ? 'leader' : 'member']) as $tagIndex => $tagName)
+                                            @php
+                                                $tagColor = $member['tagColors'][$tagIndex] ?? '#6C5CE7';
+                                                $tagColor = preg_match('/^#[0-9A-Fa-f]{6}$/', $tagColor) ? $tagColor : '#6C5CE7';
+                                            @endphp
+                                            <span class="tag-badge" style="border-color: {{ $tagColor }}; color: {{ $tagColor }};">{{ $tagName }}</span>
+                                        @endforeach
+                                    </div>
                                 </div>
                             </div>
                             @if ($isLeader && ! $isTeamLeader)
@@ -113,6 +121,82 @@
                             </div>
                         @empty
                             <div class="empty-state">No pending invitations.</div>
+                        @endforelse
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <h2>Member tags</h2>
+                    <form method="post" action="{{ route('teams.tags.store', $team['id'] ?? '') }}">
+                        @csrf
+                        <div class="form-grid">
+                            <label>
+                                Tag name
+                                <input type="text" name="name" maxlength="48" required>
+                            </label>
+                            <label>
+                                Color
+                                <input class="color-field" type="color" name="colorHex" value="#6C5CE7" required>
+                            </label>
+                            <fieldset class="full checkbox-fieldset">
+                                <legend>Assign members</legend>
+                                <div class="checkbox-grid">
+                                    @foreach ($members as $member)
+                                        @php $memberUser = $member['user'] ?? []; @endphp
+                                        <label class="checkbox-row">
+                                            <input type="checkbox" name="assignedMemberIds[]" value="{{ $memberUser['id'] ?? '' }}">
+                                            <span>{{ trim(($memberUser['firstName'] ?? '').' '.($memberUser['lastName'] ?? '')) ?: ($memberUser['alias'] ?? 'Member') }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </fieldset>
+                        </div>
+                        <button type="submit">Create tag</button>
+                    </form>
+
+                    <div class="stack tag-editor-list">
+                        @forelse (($tags ?? []) as $tag)
+                            @php
+                                $tagId = $tag['id'] ?? '';
+                                $tagIsSystem = ($tag['system'] ?? false) || in_array($tagId, ['leader', 'member'], true);
+                                $tagColor = preg_match('/^#[0-9A-Fa-f]{6}$/', $tag['colorHex'] ?? '') ? $tag['colorHex'] : '#6C5CE7';
+                            @endphp
+                            @if ($tagIsSystem)
+                                <div class="row-item tag-system-row">
+                                    <span class="tag-badge" style="border-color: {{ $tagColor }}; color: {{ $tagColor }};">{{ $tag['name'] ?? $tagId }}</span>
+                                    <span class="small muted">System tag</span>
+                                </div>
+                            @else
+                                <form class="row-item tag-edit-form" method="post" action="{{ route('teams.tags.update', [$team['id'] ?? '', $tagId]) }}">
+                                    @csrf
+                                    @method('patch')
+                                    <div class="form-grid">
+                                        <label>
+                                            Tag name
+                                            <input type="text" name="name" value="{{ $tag['name'] ?? '' }}" maxlength="48" required>
+                                        </label>
+                                        <label>
+                                            Color
+                                            <input class="color-field" type="color" name="colorHex" value="{{ $tagColor }}" required>
+                                        </label>
+                                        <fieldset class="full checkbox-fieldset">
+                                            <legend>Assigned members</legend>
+                                            <div class="checkbox-grid">
+                                                @foreach ($members as $member)
+                                                    @php $memberUser = $member['user'] ?? []; @endphp
+                                                    <label class="checkbox-row">
+                                                        <input type="checkbox" name="assignedMemberIds[]" value="{{ $memberUser['id'] ?? '' }}" @checked(in_array($tagId, $member['tagIds'] ?? [], true))>
+                                                        <span>{{ trim(($memberUser['firstName'] ?? '').' '.($memberUser['lastName'] ?? '')) ?: ($memberUser['alias'] ?? 'Member') }}</span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                        </fieldset>
+                                    </div>
+                                    <button class="button-secondary" type="submit">Update tag</button>
+                                </form>
+                            @endif
+                        @empty
+                            <div class="empty-state">Create a custom tag to organize member roles.</div>
                         @endforelse
                     </div>
                 </section>

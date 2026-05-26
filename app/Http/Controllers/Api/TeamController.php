@@ -71,6 +71,34 @@ class TeamController extends Controller
         }
     }
 
+    public function storeTag(Request $request, string $teamId, TeamService $teams): JsonResponse
+    {
+        $data = $this->validateTag($request);
+
+        try {
+            return response()->json([
+                'ok' => true,
+                'tag' => $teams->createTag($teamId, $this->uid($request), $data),
+            ], 201);
+        } catch (Throwable $exception) {
+            return $this->error($exception);
+        }
+    }
+
+    public function updateTag(Request $request, string $teamId, string $tagId, TeamService $teams): JsonResponse
+    {
+        $data = $this->validateTag($request);
+
+        try {
+            return response()->json([
+                'ok' => true,
+                'tag' => $teams->updateTag($teamId, $this->uid($request), $tagId, $data),
+            ]);
+        } catch (Throwable $exception) {
+            return $this->error($exception);
+        }
+    }
+
     public function accept(Request $request, string $inviteId, TeamService $teams): JsonResponse
     {
         try {
@@ -132,6 +160,16 @@ class TeamController extends Controller
         $uid = $request->attributes->get('firebase.uid');
 
         return is_string($uid) ? $uid : '';
+    }
+
+    private function validateTag(Request $request): array
+    {
+        return $request->validate([
+            'name' => ['required', 'string', 'max:48'],
+            'colorHex' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'assignedMemberIds' => ['nullable', 'array'],
+            'assignedMemberIds.*' => ['string', 'max:120'],
+        ]);
     }
 
     private function error(Throwable $exception): JsonResponse

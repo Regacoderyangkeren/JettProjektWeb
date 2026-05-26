@@ -84,8 +84,13 @@ class WebViewTest extends TestCase
         $showHtml = view('teams.show', [
             'team' => $team,
             'members' => [
-                ['user' => $this->user('user_1', 'Leader', 'ONLINE'), 'tags' => ['leader']],
-                ['user' => $this->user('user_2', 'Member', 'STANDBY'), 'tags' => ['member']],
+                ['user' => $this->user('user_1', 'Leader', 'ONLINE'), 'tags' => ['leader'], 'tagIds' => ['leader'], 'tagColors' => ['#2F80ED']],
+                ['user' => $this->user('user_2', 'Member', 'STANDBY'), 'tags' => ['member', 'Reviewer'], 'tagIds' => ['member', 'reviewer'], 'tagColors' => ['#27AE60', '#F2994A']],
+            ],
+            'tags' => [
+                ['id' => 'leader', 'name' => 'leader', 'colorHex' => '#2F80ED', 'system' => true],
+                ['id' => 'reviewer', 'name' => 'Reviewer', 'colorHex' => '#F2994A', 'system' => true],
+                ['id' => 'frontend', 'name' => 'Frontend', 'colorHex' => '#6C5CE7', 'system' => false],
             ],
             'pendingInvites' => [$this->teamInvite()],
             'inviteCandidates' => [$this->user('user_3', 'Candidate', 'OFFLINE')],
@@ -97,6 +102,9 @@ class WebViewTest extends TestCase
         $this->assertStringContainsString('Invitations', $indexHtml);
         $this->assertStringContainsString('Invite member', $showHtml);
         $this->assertStringContainsString('Pending invitations', $showHtml);
+        $this->assertStringContainsString('Member tags', $showHtml);
+        $this->assertStringContainsString('Reviewer', $showHtml);
+        $this->assertStringContainsString('Update tag', $showHtml);
     }
 
     public function test_chat_views_render(): void

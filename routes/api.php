@@ -48,6 +48,8 @@ Route::middleware('firebase.bearer')->group(function (): void {
     Route::get('/teams/{teamId}/chat', [ChatController::class, 'team'])->name('api.teams.chat');
     Route::post('/teams/{teamId}/chat/messages', [ChatController::class, 'sendTeam'])->name('api.teams.chat.messages.store');
     Route::post('/teams/{teamId}/invites', [TeamController::class, 'invite'])->name('api.teams.invites.store');
+    Route::post('/teams/{teamId}/tags', [TeamController::class, 'storeTag'])->name('api.teams.tags.store');
+    Route::patch('/teams/{teamId}/tags/{tagId}', [TeamController::class, 'updateTag'])->name('api.teams.tags.update');
     Route::post('/team-invites/{inviteId}/accept', [TeamController::class, 'accept'])->name('api.teams.invites.accept');
     Route::post('/team-invites/{inviteId}/decline', [TeamController::class, 'decline'])->name('api.teams.invites.decline');
     Route::delete('/teams/{teamId}/members/{userId}', [TeamController::class, 'removeMember'])->name('api.teams.members.destroy');
