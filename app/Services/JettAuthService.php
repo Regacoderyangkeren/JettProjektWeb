@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Exceptions\AuthenticatedProfileUnavailable;
 use App\Services\Firebase\FirebaseService;
 use Google\Cloud\Firestore\DocumentReference;
 use Kreait\Firebase\Auth\SignInResult;
@@ -45,7 +44,8 @@ class JettAuthService
         try {
             $profile = $this->ensureUserDocument($uid, $email);
         } catch (Throwable $exception) {
-            throw new AuthenticatedProfileUnavailable($exception);
+            report($exception);
+            $profile = $this->fallbackProfile($uid, $email);
         }
 
         $presence = [
@@ -164,6 +164,18 @@ class JettAuthService
             'lastActiveAt' => $now,
             'createdAt' => $now,
             'updatedAt' => $now,
+        ];
+    }
+
+    private function fallbackProfile(string $uid, string $email): array
+    {
+        return [
+            'id' => $uid,
+            'firstName' => '',
+            'lastName' => '',
+            'alias' => str(explode('@', $email)[0] ?? 'member')->slug('_')->toString() ?: 'member',
+            'email' => $email,
+            'profilePictureUrl' => '',
         ];
     }
 

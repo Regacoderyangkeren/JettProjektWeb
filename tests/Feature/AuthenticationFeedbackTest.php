@@ -2,13 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Exceptions\AuthenticatedProfileUnavailable;
 use App\Services\JettAuthService;
-use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Auth\SignIn\FailedToSignIn;
 use Kreait\Firebase\Exception\Auth\EmailExists;
 use Mockery;
-use RuntimeException;
 use Tests\TestCase;
 
 class AuthenticationFeedbackTest extends TestCase
@@ -42,14 +39,16 @@ class AuthenticationFeedbackTest extends TestCase
         ]);
     }
 
-    public function test_login_explains_when_auth_succeeds_but_profile_is_unavailable(): void
+    public function test_login_opens_session_with_profile_returned_by_auth_service(): void
     {
-        Log::spy();
-
         $auth = Mockery::mock(JettAuthService::class);
-        $auth->shouldReceive('login')->once()->andThrow(
-            new AuthenticatedProfileUnavailable(new RuntimeException('Firestore unavailable.'))
-        );
+        $auth->shouldReceive('login')->once()->andReturn([
+            'uid' => 'user_1',
+            'profile' => [
+                'email' => 'member@example.test',
+                'alias' => 'member',
+            ],
+        ]);
         $this->app->instance(JettAuthService::class, $auth);
 
         $response = $this->post('/login', [
@@ -57,9 +56,9 @@ class AuthenticationFeedbackTest extends TestCase
             'password' => 'Password123',
         ]);
 
-        $response->assertSessionHasErrors([
-            'email' => 'Password diterima, tetapi profil belum bisa dimuat. Coba lagi sesaat.',
-        ]);
+        $response->assertRedirect('/dashboard')
+            ->assertSessionHas('firebase.uid', 'user_1')
+            ->assertSessionHas('firebase.profile.alias', 'member');
     }
 
     public function test_api_returns_conflict_for_existing_registration(): void

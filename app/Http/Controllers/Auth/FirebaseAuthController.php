@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Exceptions\AuthenticatedProfileUnavailable;
 use App\Http\Controllers\Controller;
 use App\Services\JettAuthService;
 use Illuminate\Http\RedirectResponse;
@@ -30,12 +29,6 @@ class FirebaseAuthController extends Controller
 
         try {
             $result = $auth->login($data['email'], $data['password']);
-        } catch (AuthenticatedProfileUnavailable $exception) {
-            report($exception);
-
-            return back()
-                ->withInput($request->only('email'))
-                ->withErrors(['email' => 'Password diterima, tetapi profil belum bisa dimuat. Coba lagi sesaat.']);
         } catch (FailedToSignIn $exception) {
             if ($this->isDisabledAccount($exception)) {
                 return back()

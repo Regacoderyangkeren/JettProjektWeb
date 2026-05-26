@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Exceptions\AuthenticatedProfileUnavailable;
 use App\Http\Controllers\Controller;
 use App\Services\JettAuthService;
 use Illuminate\Http\JsonResponse;
@@ -81,13 +80,6 @@ class AuthController extends Controller
                     'expiresIn' => $result['expiresIn'],
                 ],
             ]);
-        } catch (AuthenticatedProfileUnavailable $exception) {
-            report($exception);
-
-            return response()->json([
-                'ok' => false,
-                'message' => 'Authenticated, but the user profile is temporarily unavailable.',
-            ], 503);
         } catch (FailedToSignIn $exception) {
             if ($this->isDisabledAccount($exception)) {
                 return response()->json([
