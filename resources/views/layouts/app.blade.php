@@ -277,6 +277,75 @@
                 flex-wrap: wrap;
             }
 
+            .action-link {
+                display: inline-flex;
+                align-items: center;
+                min-height: 44px;
+                padding: 10px 14px;
+                border: 1px solid var(--line);
+                border-radius: 6px;
+                background: #ffffff;
+                color: var(--accent);
+                font-weight: 700;
+            }
+
+            .action-link:hover {
+                background: #edf3ff;
+            }
+
+            .chat-panel {
+                max-width: 920px;
+            }
+
+            .chat-stream {
+                min-height: 320px;
+                max-height: min(62vh, 640px);
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                padding: 4px 2px 16px;
+            }
+
+            .chat-message {
+                align-self: flex-start;
+                width: min(78%, 600px);
+                padding: 11px 13px;
+                border: 1px solid var(--line);
+                border-radius: 8px;
+                background: #fbfcff;
+            }
+
+            .chat-message.own {
+                align-self: flex-end;
+                border-color: #bfd4ff;
+                background: #edf3ff;
+            }
+
+            .chat-message-head {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 5px;
+                font-size: 12px;
+                color: var(--muted);
+            }
+
+            .chat-message-head strong {
+                color: #324055;
+            }
+
+            .chat-message p {
+                color: var(--ink);
+                overflow-wrap: anywhere;
+                white-space: pre-wrap;
+            }
+
+            .chat-compose {
+                padding-top: 16px;
+                border-top: 1px solid var(--line);
+            }
+
             .page {
                 min-height: 100vh;
                 display: grid;
@@ -515,6 +584,10 @@
 
                 .page-header {
                     display: grid;
+                }
+
+                .chat-message {
+                    width: min(92%, 600px);
                 }
             }
         </style>

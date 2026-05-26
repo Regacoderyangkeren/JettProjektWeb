@@ -107,11 +107,14 @@
                                     <span class="small muted">{{ $user['email'] ?? '' }}</span>
                                 </div>
                             </div>
-                            <form class="inline-form" method="post" action="{{ route('connections.destroy', $user['id'] ?? '') }}">
-                                @csrf
-                                @method('delete')
-                                <button class="button-danger" type="submit">Remove</button>
-                            </form>
+                            <div class="toolbar" style="justify-content:flex-start;">
+                                <a class="action-link" href="{{ route('connections.chat', $user['id'] ?? '') }}">Chat</a>
+                                <form class="inline-form" method="post" action="{{ route('connections.destroy', $user['id'] ?? '') }}">
+                                    @csrf
+                                    @method('delete')
+                                    <button class="button-danger" type="submit">Remove</button>
+                                </form>
+                            </div>
                         </div>
                     @empty
                         <div class="empty-state">No connections yet.</div>

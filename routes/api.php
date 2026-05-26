@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\ConnectionController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\InboxController;
@@ -44,6 +45,8 @@ Route::middleware('firebase.bearer')->group(function (): void {
     Route::get('/teams', [TeamController::class, 'index'])->name('api.teams.index');
     Route::post('/teams', [TeamController::class, 'store'])->name('api.teams.store');
     Route::get('/teams/{teamId}', [TeamController::class, 'show'])->name('api.teams.show');
+    Route::get('/teams/{teamId}/chat', [ChatController::class, 'team'])->name('api.teams.chat');
+    Route::post('/teams/{teamId}/chat/messages', [ChatController::class, 'sendTeam'])->name('api.teams.chat.messages.store');
     Route::post('/teams/{teamId}/invites', [TeamController::class, 'invite'])->name('api.teams.invites.store');
     Route::post('/team-invites/{inviteId}/accept', [TeamController::class, 'accept'])->name('api.teams.invites.accept');
     Route::post('/team-invites/{inviteId}/decline', [TeamController::class, 'decline'])->name('api.teams.invites.decline');
@@ -63,6 +66,8 @@ Route::middleware('firebase.bearer')->group(function (): void {
     Route::delete('/inbox/{itemId}', [InboxController::class, 'destroy'])->name('api.inbox.destroy');
 
     Route::get('/connections', [ConnectionController::class, 'index'])->name('api.connections.index');
+    Route::get('/connections/{userId}/chat', [ChatController::class, 'connection'])->name('api.connections.chat');
+    Route::post('/connections/{userId}/chat/messages', [ChatController::class, 'sendConnection'])->name('api.connections.chat.messages.store');
     Route::post('/connections/{userId}/request', [ConnectionController::class, 'request'])->name('api.connections.request');
     Route::post('/connections/{userId}/accept', [ConnectionController::class, 'accept'])->name('api.connections.accept');
     Route::post('/connections/{userId}/decline', [ConnectionController::class, 'decline'])->name('api.connections.decline');

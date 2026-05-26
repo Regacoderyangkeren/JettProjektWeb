@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\FirebaseAuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Web\ChatPageController;
 use App\Http\Controllers\Web\ConnectionPageController;
 use App\Http\Controllers\Web\InboxPageController;
 use App\Http\Controllers\Web\NotePageController;
@@ -41,6 +42,8 @@ Route::middleware('firebase.session')->group(function (): void {
     Route::get('/teams', [TeamPageController::class, 'index'])->name('teams.index');
     Route::post('/teams', [TeamPageController::class, 'store'])->name('teams.store');
     Route::get('/teams/{teamId}', [TeamPageController::class, 'show'])->name('teams.show');
+    Route::get('/teams/{teamId}/chat', [ChatPageController::class, 'team'])->name('teams.chat');
+    Route::post('/teams/{teamId}/chat/messages', [ChatPageController::class, 'sendTeam'])->name('teams.chat.messages.store');
     Route::post('/teams/{teamId}/invites', [TeamPageController::class, 'invite'])->name('teams.invites.store');
     Route::post('/team-invites/{inviteId}/accept', [TeamPageController::class, 'accept'])->name('teams.invites.accept');
     Route::post('/team-invites/{inviteId}/decline', [TeamPageController::class, 'decline'])->name('teams.invites.decline');
@@ -57,6 +60,8 @@ Route::middleware('firebase.session')->group(function (): void {
     Route::delete('/inbox/{itemId}', [InboxPageController::class, 'destroy'])->name('inbox.destroy');
 
     Route::get('/connections', [ConnectionPageController::class, 'index'])->name('connections.index');
+    Route::get('/connections/{userId}/chat', [ChatPageController::class, 'connection'])->name('connections.chat');
+    Route::post('/connections/{userId}/chat/messages', [ChatPageController::class, 'sendConnection'])->name('connections.chat.messages.store');
     Route::post('/connections/{userId}/request', [ConnectionPageController::class, 'request'])->name('connections.request');
     Route::post('/connections/{userId}/accept', [ConnectionPageController::class, 'accept'])->name('connections.accept');
     Route::post('/connections/{userId}/decline', [ConnectionPageController::class, 'decline'])->name('connections.decline');

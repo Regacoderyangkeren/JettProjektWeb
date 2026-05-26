@@ -99,6 +99,29 @@ class WebViewTest extends TestCase
         $this->assertStringContainsString('Pending invitations', $showHtml);
     }
 
+    public function test_chat_views_render(): void
+    {
+        $messages = [$this->message()];
+
+        $connectionHtml = view('chats.connection', [
+            'currentUserId' => 'user_1',
+            'currentUser' => $this->user('user_1', 'Sender', 'ONLINE'),
+            'targetUser' => $this->user('user_2', 'Friend', 'ONLINE'),
+            'messages' => $messages,
+        ])->render();
+
+        $teamHtml = view('chats.team', [
+            'currentUserId' => 'user_1',
+            'team' => $this->team(),
+            'messages' => $messages,
+        ])->render();
+
+        $this->assertStringContainsString('Direct message', $connectionHtml);
+        $this->assertStringContainsString('Hello team', $connectionHtml);
+        $this->assertStringContainsString('Sample team chat', $teamHtml);
+        $this->assertStringContainsString('Hello team', $teamHtml);
+    }
+
     private function project(): array
     {
         return [
@@ -143,6 +166,18 @@ class WebViewTest extends TestCase
             'content' => 'Note body',
             'date' => '2026-05-26',
             'time' => '10:00',
+        ];
+    }
+
+    private function message(): array
+    {
+        return [
+            'id' => 'message_1',
+            'teamId' => 'team_1',
+            'senderId' => 'user_1',
+            'senderName' => 'Sender User',
+            'body' => 'Hello team',
+            'createdAt' => 1779744000000,
         ];
     }
 

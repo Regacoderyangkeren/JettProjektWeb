@@ -11,6 +11,7 @@
             <p>{{ $team['description'] ?? '' }}</p>
         </div>
         <div class="toolbar">
+            <a class="action-link" href="{{ route('teams.chat', $team['id'] ?? '') }}">Team chat</a>
             @if ($isLeader)
                 <form class="inline-form" method="post" action="{{ route('teams.destroy', $team['id'] ?? '') }}">
                     @csrf

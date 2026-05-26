@@ -6,6 +6,9 @@
     <span class="small muted">{{ $item['type'] ?? 'item' }}</span>
     <p>{{ $item['body'] ?? '' }}</p>
     <div class="toolbar" style="justify-content:flex-start;">
+        @if (($item['type'] ?? '') === 'connection_chat' && ($item['actorId'] ?? '') !== '')
+            <a class="action-link" href="{{ route('connections.chat', $item['actorId']) }}">Open chat</a>
+        @endif
         @if (($item['type'] ?? '') === 'team_invite' && ! ($item['read'] ?? false) && ($item['inviteId'] ?? '') !== '')
             <form class="inline-form" method="post" action="{{ route('teams.invites.accept', $item['inviteId']) }}">
                 @csrf
