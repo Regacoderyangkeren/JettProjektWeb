@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Controllers\Concerns\ReadsFirebaseData;
 use App\Http\Controllers\Controller;
 use App\Services\ConnectionService;
 use Illuminate\Http\RedirectResponse;
@@ -11,6 +12,8 @@ use Throwable;
 
 class ConnectionPageController extends Controller
 {
+    use ReadsFirebaseData;
+
     public function index(Request $request, ConnectionService $connections): View
     {
         $overview = $this->attempt(
@@ -71,14 +74,5 @@ class ConnectionPageController extends Controller
     private function uid(Request $request): string
     {
         return (string) $request->session()->get('firebase.uid', '');
-    }
-
-    private function attempt(callable $callback, mixed $fallback): mixed
-    {
-        try {
-            return $callback();
-        } catch (Throwable) {
-            return $fallback;
-        }
     }
 }

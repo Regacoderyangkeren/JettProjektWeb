@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Controllers\Concerns\ReadsFirebaseData;
 use App\Http\Controllers\Controller;
 use App\Services\ProjectService;
 use App\Services\TaskService;
@@ -13,6 +14,8 @@ use Throwable;
 
 class ProjectPageController extends Controller
 {
+    use ReadsFirebaseData;
+
     public function index(Request $request, ProjectService $projects, TeamService $teams): View
     {
         $uid = $this->uid($request);
@@ -144,14 +147,5 @@ class ProjectPageController extends Controller
         $timestamp = strtotime($date);
 
         return $timestamp === false ? 0 : $timestamp * 1000;
-    }
-
-    private function attempt(callable $callback, mixed $fallback): mixed
-    {
-        try {
-            return $callback();
-        } catch (Throwable) {
-            return $fallback;
-        }
     }
 }

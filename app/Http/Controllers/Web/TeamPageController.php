@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Controllers\Concerns\ReadsFirebaseData;
 use App\Http\Controllers\Controller;
 use App\Services\ProjectService;
 use App\Services\TeamService;
@@ -12,6 +13,8 @@ use Throwable;
 
 class TeamPageController extends Controller
 {
+    use ReadsFirebaseData;
+
     public function index(Request $request, TeamService $teams): View
     {
         $uid = $this->uid($request);
@@ -169,14 +172,5 @@ class TeamPageController extends Controller
             'assignedMemberIds' => ['nullable', 'array'],
             'assignedMemberIds.*' => ['string', 'max:120'],
         ]);
-    }
-
-    private function attempt(callable $callback, mixed $fallback): mixed
-    {
-        try {
-            return $callback();
-        } catch (Throwable) {
-            return $fallback;
-        }
     }
 }

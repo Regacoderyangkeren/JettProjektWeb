@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Controllers\Concerns\ReadsFirebaseData;
 use App\Http\Controllers\Controller;
 use App\Services\NoteService;
 use Illuminate\Http\RedirectResponse;
@@ -11,6 +12,8 @@ use Throwable;
 
 class NotePageController extends Controller
 {
+    use ReadsFirebaseData;
+
     public function index(Request $request, NoteService $notes): View
     {
         $uid = (string) $request->session()->get('firebase.uid', '');
@@ -49,15 +52,6 @@ class NotePageController extends Controller
             return back()->with('status', 'Note deleted.');
         } catch (Throwable $exception) {
             return back()->withErrors(['note' => $exception->getMessage()]);
-        }
-    }
-
-    private function attempt(callable $callback, mixed $fallback): mixed
-    {
-        try {
-            return $callback();
-        } catch (Throwable) {
-            return $fallback;
         }
     }
 }

@@ -598,6 +598,16 @@
                 line-height: 1.45;
             }
 
+            .warning {
+                margin: 0 0 18px;
+                padding: 12px 14px;
+                border-radius: 6px;
+                background: #fff7df;
+                color: var(--warning);
+                font-size: 14px;
+                line-height: 1.45;
+            }
+
             .profile-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -682,6 +692,10 @@
                 <main class="workspace">
                     @if (session('status'))
                         <div class="notice">{{ session('status') }}</div>
+                    @endif
+
+                    @if (session('firebase_read_warning'))
+                        <div class="warning">{{ session('firebase_read_warning') }}</div>
                     @endif
 
                     @if ($errors->any())

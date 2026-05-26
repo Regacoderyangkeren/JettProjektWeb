@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Http\Controllers\Concerns\ReadsFirebaseData;
 use App\Http\Controllers\Controller;
 use App\Services\InboxService;
 use Illuminate\Http\RedirectResponse;
@@ -11,6 +12,8 @@ use Throwable;
 
 class InboxPageController extends Controller
 {
+    use ReadsFirebaseData;
+
     public function index(Request $request, InboxService $inbox): View
     {
         $uid = (string) $request->session()->get('firebase.uid', '');
@@ -44,15 +47,6 @@ class InboxPageController extends Controller
             return back()->with('status', 'Inbox item removed.');
         } catch (Throwable $exception) {
             return back()->withErrors(['inbox' => $exception->getMessage()]);
-        }
-    }
-
-    private function attempt(callable $callback, mixed $fallback): mixed
-    {
-        try {
-            return $callback();
-        } catch (Throwable) {
-            return $fallback;
         }
     }
 }

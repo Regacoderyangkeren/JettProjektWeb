@@ -2,24 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\ReadsFirebaseData;
 use App\Services\InboxService;
 use App\Services\NoteService;
 use App\Services\ProjectService;
 use App\Services\TaskService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Throwable;
 
 class DashboardController extends Controller
 {
+    use ReadsFirebaseData;
+
     public function __invoke(
         Request $request,
         ProjectService $projects,
         TaskService $tasks,
         InboxService $inbox,
         NoteService $notes,
-    ): View
-    {
+    ): View {
         $uid = (string) $request->session()->get('firebase.uid', '');
         $projectItems = $this->attempt(fn () => $projects->forMember($uid), []);
         $taskItems = $this->attempt(fn () => $tasks->workload($uid), []);
@@ -33,14 +34,5 @@ class DashboardController extends Controller
             'inboxItems' => $inboxItems,
             'notes' => $noteItems,
         ]);
-    }
-
-    private function attempt(callable $callback, mixed $fallback): mixed
-    {
-        try {
-            return $callback();
-        } catch (Throwable) {
-            return $fallback;
-        }
     }
 }
